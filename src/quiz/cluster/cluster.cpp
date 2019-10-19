@@ -3,9 +3,16 @@
 
 #include "../../render/render.h"
 #include "../../render/box.h"
+#include "../../debug.h"
 #include <chrono>
 #include <string>
 #include "kdtree.h"
+
+#define CLUSTER_LOG(format, ...) \
+    LOG("CLUSTER LOG: " format, ## __VA_ARGS__)
+#define CLUSTER_ERROR(format, ...) \
+    ERROR("CLUSTER ERROR: " format, ## __VA_ARGS__)
+
 
 // Arguments:
 // window is the region to draw box around
@@ -18,7 +25,7 @@ pcl::visualization::PCLVisualizer::Ptr initScene(Box window, int zoom)
   	viewer->setCameraPosition(0, 0, zoom, 0, 1, 0);
   	viewer->addCoordinateSystem (1.0);
 
-  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 1, 1, 1, "window");
+    viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 0, 0, 0, "window");
   	return viewer;
 }
 
@@ -75,12 +82,17 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 
 }
 
-std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
+std::vector<std::vector<int>>
+euclideanCluster(const std::vector<std::vector<float>>& points,
+                 KdTree* tree,
+                 float distanceTol)
 {
 
 	// TODO: Fill out this function to return list of indices for each cluster
 
 	std::vector<std::vector<int>> clusters;
+
+
  
 	return clusters;
 
@@ -88,7 +100,6 @@ std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<flo
 
 int main ()
 {
-
 	// Create viewer
 	Box window;
   	window.x_min = -10;
@@ -145,5 +156,4 @@ int main ()
   	{
   	  viewer->spinOnce ();
   	}
-  	
 }
