@@ -21,20 +21,53 @@ void ProcessPointClouds<PointT>::numPoints(typename pcl::PointCloud<PointT>::Ptr
 
 
 template<typename PointT>
-typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
+typename pcl::PointCloud<PointT>::Ptr
+ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud,
+                                        float filterRes,
+                                        Eigen::Vector4f minPoint,
+                                        Eigen::Vector4f maxPoint)
 {
 
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
 
-    // TODO:: Fill in the function to do voxel grid point reduction and region based filtering
+    //Downsized point cloud
+    typename pcl::PointCloud<PointT>::Ptr cloudFiltered {new pcl::PointCloud<PointT>};
+
+    // Point Cloud that falls into a certain region, everything else is thrown away
+    typename pcl::PointCloud<PointT>::Ptr cloudRegion {new pcl::PointCloud<PointT>};
+
+    // Voxel Grid that will downsize the point cloud
+    pcl::VoxelGrid<PointT> vgf;
+
+    // Crop Box that will only keep points at specified area
+    pcl::CropBox<PointT> region;
+
+    // Crop Box that will throw away the points at specified area
+    pcl::CropBox<PointT> roof(true); //true means extract points within the area
+
+    // Voxel Grid's input is original point cloud
+    vgf.setInputCloud(cloud);
+    vgf.setLeafSize(filterRes, filterRes, filterRes);
+    vgf.filter(*cloudFiltered);
+
+    // Only keep points we need within specified region
+    region.setMin(minPoint);
+    region.setMax(maxPoint);
+    region.setInputCloud(cloudFiltered);
+    region.filter(*cloudRegion);
+    // Throw away points on the roof of our own car
+    roof.setMin(Eigen::Vector4f(-1.5, -1.7, -1, 1));
+    roof.setMax(Eigen::Vector4f(2.6, 1.7, -0.4, 1));
+    roof.setInputCloud(cloudRegion);
+    roof.setNegative(true);
+    roof.filter(*cloudRegion);
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    return cloud;
-
+    return cloudRegion;
 }
 
 
@@ -43,7 +76,6 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 ProcessPointClouds<PointT>::SeparateClouds(pcl::PointIndices::Ptr inliers,
                                            typename pcl::PointCloud<PointT>::Ptr cloud)
 {
-  // TODO: Create two new point clouds, one cloud with obstacles and other with segmented plane
     typename pcl::PointCloud<PointT>::Ptr obstacle {new pcl::PointCloud<PointT>};
     typename pcl::PointCloud<PointT>::Ptr planeCloud {new pcl::PointCloud<PointT>};
 
@@ -117,7 +149,6 @@ ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr clo
     typename pcl::search::KdTree<PointT>::Ptr tree {new pcl::search::KdTree<PointT>};
     std::vector<pcl::PointIndices> cluster_indices;
 
-    // TODO:: Fill in the function to perform euclidean clustering to group detected obstacles
     ec.setClusterTolerance(clusterTolerance);
     ec.setMinClusterSize(minSize);
     ec.setMaxClusterSize(maxSize);
