@@ -1,6 +1,7 @@
 // PCL lib Functions for processing point clouds 
 
 #include "processPointClouds.h"
+#include "kdtree.h"
 
 
 //constructor:
@@ -132,10 +133,75 @@ ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr c
     return segResult;
 }
 
+void
+clusterHelper(const std::vector<std::vector<float>>& points,
+              uint pos,
+              std::vector<bool>& processed,
+              KdTree* tree,
+              float distanceTol,
+              std::vector<int>& cluster)
+{
+    processed[pos] = true;
+    cluster.push_back(pos);
+
+    std::vector<int> nearest = tree->search(points[pos], distanceTol);
+
+    for (auto n : nearest) {
+        if (!processed[n]) {
+            clusterHelper(points, n, processed, tree, distanceTol, cluster);
+        }
+    }
+}
+
+std::vector<std::vector<int>>
+euclideanCluster(const std::vector<std::vector<float>>& points,
+                 KdTree* tree,
+                 float distanceTol)
+{
+
+    std::vector<bool> processed (points.size(), false);
+	std::vector<std::vector<int>> clusters;
+
+    for (auto i = 0; i < points.size(); i++) {
+        if (!processed[i]) {
+            std::vector<int> cluster;
+            clusterHelper(points, i, processed, tree, distanceTol, cluster);
+            clusters.push_back(cluster);
+        }
+    }
+
+	return clusters;
+}
+
 
 template<typename PointT>
 std::vector<typename pcl::PointCloud<PointT>::Ptr>
-ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr cloud,
+ProcessPointClouds<PointT>::ClusteringiPCL(typename pcl::PointCloud<PointT>::Ptr cloud,
+                                       float clusterTolerance,
+                                       int minSize,
+                                       int maxSize)
+{
+    // Time clustering process
+    auto startTime = std::chrono::steady_clock::now();
+
+    KdTree *tree {new KdTree()};
+    
+    for (int i = 0; i < cloud.size(); i++) {
+        tree->insert(cloud[i], i);
+    }
+
+
+
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "clustering took " << elapsedTime.count() << " milliseconds and found " << clusters.size() << " clusters" << std::endl;
+
+    return clusters;
+}
+
+template<typename PointT>
+std::vector<typename pcl::PointCloud<PointT>::Ptr>
+ProcessPointClouds<PointT>::ClusteringiPCL(typename pcl::PointCloud<PointT>::Ptr cloud,
                                        float clusterTolerance,
                                        int minSize,
                                        int maxSize)
@@ -218,10 +284,12 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::loadPcd(std::s
 
 
 template<typename PointT>
-std::vector<boost::filesystem::path> ProcessPointClouds<PointT>::streamPcd(std::string dataPath)
+std::vector<boost::filesystem::path>
+ProcessPointClouds<PointT>::streamPcd(std::string dataPath)
 {
 
-    std::vector<boost::filesystem::path> paths(boost::filesystem::directory_iterator{dataPath}, boost::filesystem::directory_iterator{});
+    std::vector<boost::filesystem::path> paths(boost::filesystem::directory_iterator{dataPath},
+                                               boost::filesystem::directory_iterator{});
 
     // sort files in accending order so playback is chronological
     sort(paths.begin(), paths.end());

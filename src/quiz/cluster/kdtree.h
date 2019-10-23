@@ -9,7 +9,7 @@
 #define KD_TREE_ERROR(format, ...) \
     ERROR("KD-Tree Error: " format, ## __VA_ARGS__)
 
-#define IS_ODD(n) (n & 1)
+#define KD_TREE_DIR(n) (n % 3)
 
 // Structure to represent node of kd tree
 struct Node
@@ -76,7 +76,7 @@ struct KdTree
             // check the depth
             // if depth is odd, compare by Y axis
             // else compare by X axis
-            auto dir = IS_ODD(depth);
+            auto dir = KD_TREE_DIR(depth);
             if (pointArg[dir] < (*node)->point[dir]) {
                 insertHelper(&(*node)->left, pointArg, idArg, depth+1);
             } else {
@@ -101,20 +101,23 @@ struct KdTree
                         const std::vector<float>& p,
                         const float tol) {
             return ((p[0] <= (t[0] + tol)) && (p[0] >= (t[0] - tol))) &&
-                   ((p[1] <= (t[1] + tol)) && (p[1] >= (t[1] - tol)));
+                   ((p[1] <= (t[1] + tol)) && (p[1] >= (t[1] - tol))) &&
+                   ((p[2] <= (t[2] + tol)) && (p[2] >- (t[2] - tol)));
         };
 
         // Split is over Y axis if 1, X axis otherwise
-        auto dir = IS_ODD(level);
+        auto dir = KD_TREE_DIR(level);
 
         KD_TREE_LOG("LEVEL %d | DIR %d", level, dir);
 
         if (inBox(target, node->point, distanceTol)) {
             auto dist = sqrt(pow(target[0] - node->point[0], 2) +
-                             pow(target[1] - node->point[1], 2));
+                             pow(target[1] - node->point[1], 2) +
+                             pow(target[2] - node->point[2], 2));
 
-            KD_TREE_LOG("(%f, %f) is inside (%f, %f) +- %f",
-                        node->point[0], node->point[1], target[0], target[1], distanceTol);
+            KD_TREE_LOG("(%f, %f, %f) is inside (%f, %f, %f) +- %f",
+                        node->point[0], node->point[1], node->point[2],
+                        target[0], target[1], target[2], distanceTol);
 
             if (dist < distanceTol) {
                 nbrs.push_back(node->id);
@@ -122,12 +125,11 @@ struct KdTree
         }
 
         if (target[dir] - distanceTol < node->point[dir]) {
-            KD_TREE_LOG("Searching left of %c axis", dir ? 'Y' : 'X');
+            KD_TREE_LOG("Searching left of %c axis", dir + 'X');
             searchHelper(target, distanceTol, node->left, level + 1, nbrs);
         }
         if (target[dir] + distanceTol > node->point[dir]) {
-            KD_TREE_LOG("Searching right of %c axis", dir ? 'Y' : 'X');
-
+            KD_TREE_LOG("Searching right of %c axis", dir + 'X');
             searchHelper(target, distanceTol, node->right, level + 1, nbrs);
         }
     }
