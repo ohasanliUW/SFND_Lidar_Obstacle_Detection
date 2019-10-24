@@ -13,7 +13,7 @@ std::vector<Car> initHighway(bool renderScene, pcl::visualization::PCLVisualizer
 
     Car egoCar( Vect3(0,0,0), Vect3(4,2,2), Color(0,1,0), "egoCar");
     Car car1( Vect3(15,0,0), Vect3(4,2,2), Color(0,0,1), "car1");
-    Car car2( Vect3(8,-4,0), Vect3(4,2,2), Color(0,0,1), "car2");	
+    Car car2( Vect3(8,-4,0), Vect3(4,2,2), Color(0,0,1), "car2");   
     Car car3( Vect3(-12,4,0), Vect3(4,2,2), Color(0,0,1), "car3");
   
     std::vector<Car> cars;
@@ -110,9 +110,14 @@ cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
                                                Eigen::Vector4f(-10.0f,-5.0f,-2.0f,1),
                                                Eigen::Vector4f(30.0f,8.0f,1.0f, 1));
 
+    // Segment cloud
     auto segmentedCloud = pointProcessorI->SegmentPlane(filteredCloud, 200, 0.1);
-    auto clusters = pointProcessorI->Clustering(segmentedCloud.first, 0.53, 10, 500);
 
+    // First part of the segmented cloud set of points that is not on Plane
+    // Cluster the point cloud via Euclidean Clustering algorithm
+    auto clusters = pointProcessorI->Clustering(segmentedCloud.first, 0.50, 10, 500);
+
+    // Draw bounding boxes around each cluster of points
     std::vector<Color> colors = {Color(1,0,0), Color(1,1,0), Color(0,0,1)};
     int clusterID = 0;
     for (auto c : clusters) {
@@ -120,6 +125,8 @@ cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
         renderBox(viewer,pointProcessorI->BoundingBox(c), clusterID);
         clusterID++;
     }
+
+    // Draw points of Plane (road) in green color to distinguish it from objects
     renderPointCloud(viewer, segmentedCloud.second, "plane", Color(0,1,0));
 }
 
