@@ -110,13 +110,9 @@ clusterHelper(const std::vector<std::vector<float>>& points,
     cluster.push_back(pos);
 
     std::vector<int> nearest = tree->search(points[pos], distanceTol);
-            PAUSE;
 
     for (auto n : nearest) {
         if (!processed[n]) {
-            pcl::PointCloud<pcl::PointXYZ>::Ptr dummy{new pcl::PointCloud<pcl::PointXYZ>()};
-            dummy->push_back(pcl::PointXYZ(points[n][0], points[n][1], points[n][2]));
-            renderPointCloud(viewer, dummy, "dummy", Color(0,1,1));
             clusterHelper(points, n, processed, tree, distanceTol, cluster, viewer);
         }
     }
@@ -154,16 +150,23 @@ int main ()
   	window.z_min = -10;
   	window.z_max =  10;
 	pcl::visualization::PCLVisualizer::Ptr viewer = initScene(window, 25);
-#if 0
 	// Create data
 	std::vector<std::vector<float>> points = { {-6.2,7, 0}, {-6.3, 7.1, 0.2}, {-6.3,8.4, 0}, {-6.1, 8.6, -0.2}, {-5.2,7.1, 0.1}, {-5, 7, 0.2}, {-5.7,6.3, 2.5}, {7.2,6.1, -2}, {8.0,5.3}, {7.2,7.1}, {0.2,-7.1}, {1.7,-6.9}, {-1.2,-7.2}, {2.2,-8.9} };
 	//std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
 	KdTree* tree = new KdTree;
-  
-    for (int i=0; i<points.size(); i++) 
-    	tree->insert(points[i],i); 
+
+    for (auto p : *cloud) {
+        std::cout << "(" << p.x << ", " << p.y << ", " << p.z << ")" << std::endl;
+    }
+    tree->insert(cloud);
+    std::cout << "=============" << std::endl;
+    for (auto p : *cloud) {
+        std::cout << "(" << p.x << ", " << p.y << ", " << p.z << ")" << std::endl;
+    }
+    //for (int i=0; i<points.size(); i++) 
+    //	tree->insert(points[i],i); 
 
   	int it = 0;
   	render3DTree(tree->root,viewer,window, it);
@@ -195,7 +198,6 @@ int main ()
   	}
   	if(clusters.size()==0)
   		renderPointCloud(viewer,cloud,"data");
-#endif
 
   	while (!viewer->wasStopped ())
   	{

@@ -3,6 +3,7 @@
 
 #include "../../render/render.h"
 #include "../../debug.h"
+#include <pcl/common/common.h>
 
 #define KD_TREE_LOG(format, ...) \
     LOG("KD-Tree LOG: " format, ## __VA_ARGS__)
@@ -51,6 +52,13 @@ struct KdTree
         insertHelper(&root, point, id, 0);
 	}
 
+    void
+    insert(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+    {
+        insertHelper(&root, cloud->begin(), cloud->end(), 0, 0);
+
+    }
+
 	// return a list of point ids in the tree that are within distance of target
 	std::vector<int> search(std::vector<float> target, float distanceTol)
 	{
@@ -61,6 +69,18 @@ struct KdTree
 	}
 
     private:
+
+    void
+    insertHelper(Node **node,
+                 pcl::PointCloud<pcl::PointXYZ>::iterator start,
+                 pcl::PointCloud<pcl::PointXYZ>::iterator end,
+                 int idArg, int depth)
+    {
+        auto dir = depth % 3;
+        std::sort(start, end, [dir](pcl::PointXYZ p1, pcl::PointXYZ p2){
+            return p1.data[dir] < p2.data[dir];        
+        });
+    }
 
     void
     insertHelper(Node **node, std::vector<float> pointArg, int idArg, int depth)
@@ -102,7 +122,7 @@ struct KdTree
                         const float tol) {
             return ((p[0] <= (t[0] + tol)) && (p[0] >= (t[0] - tol))) &&
                    ((p[1] <= (t[1] + tol)) && (p[1] >= (t[1] - tol))) &&
-                   ((p[2] <= (t[2] + tol)) && (p[2] >- (t[2] - tol)));
+                   ((p[2] <= (t[2] + tol)) && (p[2] >= (t[2] - tol)));
         };
 
         // Split is over Y axis if 1, X axis otherwise

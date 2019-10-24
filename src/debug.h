@@ -9,5 +9,4 @@
 #define ERROR(format, ...) \
     fprintf(stderr, format "\n", ## __VA_ARGS__)
 
-
 #endif
