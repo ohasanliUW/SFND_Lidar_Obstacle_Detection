@@ -15,14 +15,14 @@
 // Structure to represent node of kd tree
 struct Node
 {
-	std::vector<float> point;
-	int id;
+    std::vector<float> point;
+    int id;
     Node* left;
     Node* right;
 
-	Node(std::vector<float> arr, int setId)
-	:	point(arr), id(setId), left(nullptr), right(nullptr)
-	{}
+    Node(std::vector<float> arr, int setId)
+    :   point(arr), id(setId), left(nullptr), right(nullptr)
+    {}
 
     ~Node() {
         KD_TREE_LOG("~Node(): %d", id);
@@ -35,22 +35,22 @@ struct KdTree
 {
     Node* root;
 
-	KdTree()
-	: root(nullptr)
-	{}
+    KdTree()
+    : root(nullptr)
+    {}
 
     ~KdTree() {
         KD_TREE_LOG("~KdTree()");
         delete root;
     }
 
-	void
+    void
     insert(std::vector<float> point, int id)
-	{
-		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
+    {
+        // TODO: Fill in this function to insert a new point into the tree
+        // the function should create a new node and place correctly with in the root 
         insertHelper(&root, point, id, 0);
-	}
+    }
 
     void
     insert(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
@@ -59,14 +59,14 @@ struct KdTree
 
     }
 
-	// return a list of point ids in the tree that are within distance of target
-	std::vector<int> search(std::vector<float> target, float distanceTol)
-	{
-		std::vector<int> ids;
+    // return a list of point ids in the tree that are within distance of target
+    std::vector<int> search(std::vector<float> target, float distanceTol)
+    {
+        std::vector<int> ids;
 
         searchHelper(target, distanceTol, root, 0, ids);
-		return ids;
-	}
+        return ids;
+    }
 
     private:
 
@@ -153,7 +153,7 @@ struct KdTree
             searchHelper(target, distanceTol, node->right, level + 1, nbrs);
         }
     }
-	
+    
 
 };
 

@@ -119,11 +119,17 @@ template <typename PointT>
 std::unordered_set<int>
 RansacPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceTol)
 {
-	std::unordered_set<int> inliersResult;
-	srand(time(NULL));
-
-	// For max iterations 
-    while (maxIterations--) {
+    std::unordered_set<int> inliersResult;
+    srand(time(NULL));
+/*
+    int it = 0;
+    float prob = 0.99;
+    float log_prob = std::log(1 - prob);
+    float one_over_size = 1.0 / cloud->size();
+    float k = 1.0;
+*/
+    // For max iterations 
+    while (maxIterations--/* && it < k*/) {
         std::unordered_set<int> inliers(cloud->size());
         // Randomly sample subset and fit line
         while (inliers.size() < 3) {
@@ -162,11 +168,19 @@ RansacPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, floa
 
         if (inliers.size() > inliersResult.size()) {
             inliersResult = inliers;
+            /*
+            float q = inliersResult.size() * one_over_size;
+            float prob_outliers = 1 - pow(q, cloud->size());
+            prob_outliers = std::max(std::numeric_limits<float>::epsilon(), prob_outliers);
+            prob_outliers = std::min(1 - std::numeric_limits<float>::epsilon(), prob_outliers);
+            k = log_prob / std::log(prob_outliers);
+        */
         }
+        //it++;
     }
 
     // Return indicies of inliers from fitted line with most inliers
-	return inliersResult;
+    return inliersResult;
 }
 
 
@@ -206,7 +220,7 @@ ProcessPointClouds<PointT>::SegmentPlanePCL(typename pcl::PointCloud<PointT>::Pt
 {
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
-	pcl::PointIndices::Ptr inliers {new pcl::PointIndices};
+    pcl::PointIndices::Ptr inliers {new pcl::PointIndices};
     pcl::ModelCoefficients::Ptr coefficients {new pcl::ModelCoefficients};
 
     // Create Segmentation object
@@ -291,7 +305,7 @@ euclideanCluster(typename pcl::PointCloud<PointT>::Ptr cloud,
     // initially all points are unprocessed
     std::vector<bool> processed (cloud->points.size(), false);
     // vector of clusters
-	std::vector<std::vector<int>> clusters;
+    std::vector<std::vector<int>> clusters;
 
     // for every point in point cloud, if not processed, start processing
     for (auto i = 0; i < cloud->size(); i++) {
@@ -305,7 +319,7 @@ euclideanCluster(typename pcl::PointCloud<PointT>::Ptr cloud,
         }
     }
 
-	return clusters;
+    return clusters;
 }
 
 

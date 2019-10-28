@@ -20,14 +20,14 @@
 template <typename PointT>
 struct Node
 {
-	PointT point;
-	int id;
+    PointT point;
+    int id;
     Node<PointT>* left;
     Node<PointT>* right;
 
-	Node(PointT point, int setId)
-	:	point(point), id(setId), left(nullptr), right(nullptr)
-	{}
+    Node(PointT point, int setId)
+    :   point(point), id(setId), left(nullptr), right(nullptr)
+    {}
 
     ~Node() {
         KD_TREE_LOG("~Node(): %d", id);
@@ -41,9 +41,9 @@ struct KdTree
 {
     Node<PointT>* root;
 
-	KdTree()
-	: root(nullptr)
-	{}
+    KdTree()
+    : root(nullptr)
+    {}
 
     ~KdTree() {
         KD_TREE_LOG("~KdTree()");
@@ -51,11 +51,11 @@ struct KdTree
     }
 
     // Insert point into KD-Tree with specified id
-	void
+    void
     insert(const PointT& point, int id)
-	{
+    {
         insertHelper(&root, point, id, 0);
-	}
+    }
 
     // Insert all of the points in Point Cloud into the KD-Tree
     void
@@ -64,15 +64,15 @@ struct KdTree
         insertHelper(&root, cloud->begin(), cloud->begin(), cloud->end(), 0);
     }
 
-	// return a list of point ids in the tree that are within distance of target
-	std::vector<int>
+    // return a list of point ids in the tree that are within distance of target
+    std::vector<int>
     search(const PointT& target, float distanceTol)
-	{
-		std::vector<int> ids;
+    {
+        std::vector<int> ids;
 
         searchHelper(target, distanceTol, root, 0, ids);
-		return ids;
-	}
+        return ids;
+    }
 
     private:
 
@@ -195,7 +195,7 @@ struct KdTree
             searchHelper(target, distanceTol, node->right, level + 1, nbrs);
         }
     }
-	
+    
 
 };
 
