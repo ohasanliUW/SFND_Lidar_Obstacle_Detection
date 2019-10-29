@@ -117,19 +117,99 @@ ProcessPointClouds<PointT>::SeparateCloudsPCL(pcl::PointIndices::Ptr inliers,
 
 template <typename PointT>
 std::unordered_set<int>
-RansacPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceTol)
+RansacPlane2(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceTol)
 {
     std::unordered_set<int> inliersResult;
     srand(time(NULL));
-/*
+
     int it = 0;
     float prob = 0.99;
     float log_prob = std::log(1 - prob);
     float one_over_size = 1.0 / cloud->size();
     float k = 1.0;
-*/
+    int max_skip = 10 * maxIterations;
+    int skip = 0;
     // For max iterations 
-    while (maxIterations--/* && it < k*/) {
+    while (it < k && skip < max_skip) {
+        std::unordered_set<int> inliers(cloud->size());
+        // Randomly sample subset and fit line
+        while (inliers.size() < 3) {
+            inliers.insert(rand() % cloud->size());
+        }
+
+        auto itr = inliers.begin();
+
+        auto p1 = (*cloud)[*itr];
+        itr++;
+        auto p2 = (*cloud)[*itr];
+        itr++;
+        auto p3 = (*cloud)[*itr];
+
+        //check if points are collinear
+        if ([p1, p2, p3]() {
+                auto a = (p1.x * (p2.y - p3.y) + 
+                       p2.x * (p3.y - p1.y) +
+                       p3.x * (p1.y - p2.y));
+                return std::fabs(a) <= 200.0f;
+                }()) {
+            skip++;
+            //std::cerr << "COLLINEARITY FOUND" << std::endl;
+            continue;
+        }
+        // line:  Ax + By + C = 0
+        // where: A = (y1-y2), B = (x2-x1), C = (x1*y2 - x2*y1)
+        float A = (p2.y - p1.y) * (p3.z - p1.z) - (p2.z - p1.z) * (p3.y - p1.y);
+        float B = (p2.z - p1.z) * (p3.x - p1.x) - (p2.x - p1.x) * (p3.z - p1.z);
+        float C = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
+        float D = -(A * p1.x + B * p1.y + C * p1.z);
+
+        // Measure distance between every point and fitted line
+        // If distance is smaller than threshold count it as inlier
+
+        for (int index = 0; index < cloud->size(); index++) {
+            if (inliers.find(index) != inliers.end()) {
+                continue;
+            }
+            PointT p = (*cloud)[index];
+            float dist = fabs(A * p.x + B * p.y + C * p.z + D) / sqrt(pow(A, 2) + pow(B, 2) + pow(C, 2));
+
+            if (dist < distanceTol) {
+                inliers.insert(index);
+            }
+        }
+
+        if (inliers.size() > inliersResult.size()) {
+            inliersResult = inliers;
+            
+            float q = static_cast<float>(inliersResult.size()) * one_over_size;
+            float prob_outliers = 1 - pow(q, static_cast<float>(cloud->size()));
+            prob_outliers = (std::max)(std::numeric_limits<float>::epsilon(), prob_outliers);
+            prob_outliers = (std::min)(1.0f - std::numeric_limits<float>::epsilon(), prob_outliers);
+            k = log_prob / std::log(prob_outliers);
+        }
+        it++;
+
+        if (it == maxIterations) {
+            break;
+        }
+    }
+
+    std::cerr << "RANSAC PLANE TOOK " << it << " ITERATIONS" << std::endl;
+
+    // Return indicies of inliers from fitted line with most inliers
+    return inliersResult;
+}
+
+
+template <typename PointT>
+std::unordered_set<int>
+RansacPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceTol)
+{
+    std::unordered_set<int> inliersResult;
+    srand(time(NULL));
+    int it = 0;
+    // For max iterations 
+    while (it < maxIterations) {
         std::unordered_set<int> inliers(cloud->size());
         // Randomly sample subset and fit line
         while (inliers.size() < 3) {
@@ -168,16 +248,11 @@ RansacPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, floa
 
         if (inliers.size() > inliersResult.size()) {
             inliersResult = inliers;
-            /*
-            float q = inliersResult.size() * one_over_size;
-            float prob_outliers = 1 - pow(q, cloud->size());
-            prob_outliers = std::max(std::numeric_limits<float>::epsilon(), prob_outliers);
-            prob_outliers = std::min(1 - std::numeric_limits<float>::epsilon(), prob_outliers);
-            k = log_prob / std::log(prob_outliers);
-        */
         }
-        //it++;
+        it++;
     }
+    
+    std::cerr << "RANSAC PLANE TOOK " << it << " ITERATIONS" << std::endl;
 
     // Return indicies of inliers from fitted line with most inliers
     return inliersResult;
@@ -194,7 +269,7 @@ ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr c
     auto startTime = std::chrono::steady_clock::now();
     std::unordered_set<int> inliers;
 
-    inliers = RansacPlane<PointT>(cloud, maxIterations, distanceThreshold);
+    inliers = RansacPlane2<PointT>(cloud, maxIterations, distanceThreshold);
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "RANSAC took " << elapsedTime.count() << " milliseconds" << std::endl;

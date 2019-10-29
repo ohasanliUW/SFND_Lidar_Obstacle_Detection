@@ -53,9 +53,9 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     //renderRays(viewer, lidar->position, inputCloud);
     //renderPointCloud(viewer, inputCloud, "abc", Color(0,1.0,0));
     ProcessPointClouds<pcl::PointXYZ> pclProcessor;
-    auto segmentedCloud = pclProcessor.SegmentPlane(inputCloud, 100, 0.2);
+    auto segmentedCloud = pclProcessor.SegmentPlanePCL(inputCloud, 100, 0.2);
 
-    auto clusters = pclProcessor.Clustering(segmentedCloud.first, 1.0, 3, 30);
+    auto clusters = pclProcessor.ClusteringPCL(segmentedCloud.first, 1.0, 3, 30);
     std::vector<Color> colors = {Color(1,0,0), Color(0,1,0), Color(0,0,1)};
 
     int clusterID = 0;
@@ -103,15 +103,17 @@ void initCamera(CameraAngle setAngle, pcl::visualization::PCLVisualizer::Ptr& vi
 void
 cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
           ProcessPointClouds<pcl::PointXYZI>* pointProcessorI,
-          const pcl::PointCloud<pcl::PointXYZI>::Ptr& inputCloud)
+          const pcl::PointCloud<pcl::PointXYZI>::Ptr& inputCloud,
+          const float resolution = 0.3f,
+          const float disTol = 0.53f)
 {
     pcl::PointCloud<pcl::PointXYZI>::Ptr filteredCloud;
-    filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.3f,
+    filteredCloud = pointProcessorI->FilterCloud(inputCloud, resolution,
                                                Eigen::Vector4f(-10.0f,-5.0f,-2.0f,1),
                                                Eigen::Vector4f(30.0f,8.0f,1.0f, 1));
 
     auto segmentedCloud = pointProcessorI->SegmentPlane(filteredCloud, 200, 0.1);
-    auto clusters = pointProcessorI->Clustering(segmentedCloud.first, 0.50, 10, 500);
+    auto clusters = pointProcessorI->Clustering(segmentedCloud.first, disTol, 10, 500);
 
     std::vector<Color> colors = {Color(1,0,0), Color(1,1,0), Color(0,0,1)};
     int clusterID = 0;
@@ -142,8 +144,13 @@ int main (int argc, char** argv)
         viewer->removeAllShapes();
         // Load pcd and run obstacle detection process
         inputCloudI = pointProcessorI->loadPcd((*streamIterator).string());
-        cityBlock(viewer, pointProcessorI, inputCloudI);
-
+        if (argc > 3) {
+            cityBlock(viewer, pointProcessorI, inputCloudI, atof(argv[1]), atof(argv[2]));
+        } else if (argc > 2) {
+            cityBlock(viewer, pointProcessorI, inputCloudI, atof(argv[1]));
+        } else {
+            cityBlock(viewer, pointProcessorI, inputCloudI);
+        }
         streamIterator++;
         if(streamIterator == stream.end()) {
             streamIterator = stream.begin();
