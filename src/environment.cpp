@@ -115,7 +115,7 @@ cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
 
     // First part of the segmented cloud set of points that is not on Plane
     // Cluster the point cloud via Euclidean Clustering algorithm
-    auto clusters = pointProcessorI->Clustering(segmentedCloud.first, 0.50, 10, 500);
+    auto clusters = pointProcessorI->Clustering(segmentedCloud.first, 0.53, 10, 500);
 
     // Draw bounding boxes around each cluster of points
     std::vector<Color> colors = {Color(1,0,0), Color(1,1,0), Color(0,0,1)};

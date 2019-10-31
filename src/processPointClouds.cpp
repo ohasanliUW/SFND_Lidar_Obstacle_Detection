@@ -185,8 +185,8 @@ ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr c
         std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
     }
 
-    endTime = std::chrono::steady_clock::now();
-    elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
 
     std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
